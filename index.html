@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Monktardio Meme Editor</title>
+  <style>
+    body {
+      font-family: 'Courier New', monospace;
+      background-color: #c0c0c0;
+      text-align: center;
+      padding: 20px;
+    }
+    .editor {
+      background: #fff;
+      border: 4px solid #000;
+      display: inline-block;
+      padding: 10px;
+    }
+    canvas {
+      border: 2px solid black;
+      margin-top: 10px;
+    }
+    input, button {
+      margin: 5px;
+      padding: 5px;
+      font-family: inherit;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧠 Monktardio Meme Editor</h1>
+  <div class="editor">
+    <input type="file" id="imageLoader" accept="image/*" /> <br>
+    <input type="text" id="topText" placeholder="Top text" /> <br>
+    <input type="text" id="bottomText" placeholder="Bottom text" /> <br>
+    <button onclick="generateMeme()">🖼 Generate Meme</button>
+    <button onclick="downloadMeme()">💾 Download</button>
+    <canvas id="memeCanvas" width="500" height="500"></canvas>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('memeCanvas');
+    const ctx = canvas.getContext('2d');
+    let image = new Image();
+
+    document.getElementById('imageLoader').addEventListener('change', function (e) {
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        image.onload = () => ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+        image.src = event.target.result;
+      };
+      reader.readAsDataURL(e.target.files[0]);
+    });
+
+    function generateMeme() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+      ctx.font = '30px Impact';
+      ctx.fillStyle = 'white';
+      ctx.strokeStyle = 'black';
+      ctx.lineWidth = 2;
+      ctx.textAlign = 'center';
+
+      const topText = document.getElementById('topText').value;
+      const bottomText = document.getElementById('bottomText').value;
+
+      ctx.fillText(topText.toUpperCase(), canvas.width / 2, 40);
+      ctx.strokeText(topText.toUpperCase(), canvas.width / 2, 40);
+
+      ctx.fillText(bottomText.toUpperCase(), canvas.width / 2, canvas.height - 20);
+      ctx.strokeText(bottomText.toUpperCase(), canvas.width / 2, canvas.height - 20);
+    }
+
+    function downloadMeme() {
+      const link = document.createElement('a');
+      link.download = 'monktardio-meme.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+  </script>
+</body>
+</html>
