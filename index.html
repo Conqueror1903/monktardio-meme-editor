@@ -18,14 +18,17 @@
       margin: 0 auto;
       padding: 10px;
     }
-    input, button {
+    input, button, select {
       font-family: inherit;
       padding: 8px;
       margin: 5px;
     }
-    #nft-image {
-      max-width: 100%;
+    #editor {
+      position: relative;
+      display: inline-block;
       margin-top: 10px;
+    }
+    canvas {
       border: 1px solid #000;
     }
   </style>
@@ -33,25 +36,105 @@
 <body>
   <div class="container">
     <h2>🧠 Monktardio Meme Editor</h2>
-    <label for="token-id">Token ID (1-2222):</label>
-    <input type="number" id="token-id" min="1" max="2222" placeholder="z.B. 128">
-    <button onclick="ladeNFT()">NFT laden</button>
+    <label for="token-id">Enter Token ID (1-2222):</label>
+    <input type="number" id="token-id" min="1" max="2222" placeholder="e.g. 128">
+    <button onclick="loadNFT()">Load NFT</button>
+
     <div>
-      <img id="nft-image" src="" alt="NFT wird hier angezeigt">
+      <input type="text" id="meme-text" placeholder="Enter overlay text">
+      <button onclick="drawOverlay()">Add Text</button>
+    </div>
+
+    <div>
+      <label for="overlay-select">Choose Overlay:</label>
+      <select id="overlay-select" onchange="drawOverlay()">
+        <option value="">None</option>
+        <option value="overlay1.png">Overlay 1</option>
+        <option value="overlay2.png">Overlay 2</option>
+        <option value="overlay3.png">Overlay 3</option>
+        <option value="overlay4.png">Overlay 4</option>
+        <option value="overlay5.png">Overlay 5</option>
+        <option value="overlay6.png">Overlay 6</option>
+      </select>
+    </div>
+
+    <div id="editor">
+      <canvas id="meme-canvas" width="500" height="500"></canvas>
+    </div>
+
+    <div>
+      <button onclick="downloadMeme()">⬇️ Download</button>
+      <button onclick="shareOnX()">🔗 Share on X</button>
     </div>
   </div>
 
   <script>
-    function ladeNFT() {
+    const canvas = document.getElementById('meme-canvas');
+    const ctx = canvas.getContext('2d');
+    let currentImage = null;
+    let currentOverlay = null;
+
+    function loadNFT() {
       const tokenId = document.getElementById('token-id').value;
       if (!tokenId || tokenId < 1 || tokenId > 2222) {
-        alert('Bitte gültige Token ID zwischen 1 und 2222 eingeben.');
+        alert('Please enter a valid Token ID between 1 and 2222.');
+        return;
+      }
+      const imageUrl = `https://ipfs.io/ipfs/bafybeiamvpd34u2bdn6ocaiybjqjkpytnhwcfcoooakkv4bd34tymrzv5e/${tokenId}.webp`;
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        currentImage = img;
+        drawOverlay();
+      };
+      img.src = imageUrl;
+    }
+
+    function drawOverlay() {
+      if (!currentImage) {
         return;
       }
 
-      const imageUrl = `https://ipfs.io/ipfs/bafybeiamvpd34u2bdn6ocaiybjqjkpytnhwcfcoooakkv4bd34tymrzv5e/${tokenId}.webp`;
-      document.getElementById('nft-image').src = imageUrl;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(currentImage, 0, 0, canvas.width, canvas.height);
+
+      const overlayFile = document.getElementById('overlay-select').value;
+      if (overlayFile) {
+        const overlay = new Image();
+        overlay.onload = () => {
+          ctx.drawImage(overlay, 0, 0, canvas.width, canvas.height);
+          drawText();
+        };
+        overlay.src = overlayFile;
+      } else {
+        drawText();
+      }
+    }
+
+    function drawText() {
+      const text = document.getElementById('meme-text').value;
+      ctx.font = 'bold 36px Impact';
+      ctx.fillStyle = '#fff';
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 4;
+      ctx.textAlign = 'center';
+      ctx.strokeText(text, canvas.width / 2, 60);
+      ctx.fillText(text, canvas.width / 2, 60);
+    }
+
+    function downloadMeme() {
+      const link = document.createElement('a');
+      link.download = 'monktardio-meme.png';
+      link.href = canvas.toDataURL();
+      link.click();
+    }
+
+    function shareOnX() {
+      const tweetText = encodeURIComponent('Check out my #Monktardio meme! 🤡👉🧠');
+      const tweetUrl = `https://twitter.com/intent/tweet?text=${tweetText}`;
+      window.open(tweetUrl, '_blank');
     }
   </script>
 </body>
 </html>
+
