@@ -2,137 +2,270 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Monktardio Meme Editor</title>
   <style>
     body {
-      font-family: 'Courier New', monospace;
-      background-color: #c0c0c0;
-      padding: 20px;
-      text-align: center;
-    }
-    .container {
-      background: white;
-      border: 2px solid black;
-      width: 560px;
-      margin: 0 auto;
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
+      margin: 0;
       padding: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
-    input, button, select {
-      font-family: inherit;
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 10px;
+    }
+
+    .row.download-row {
+      margin-top: 20px;
+    }
+
+    label {
+      font-weight: bold;
+      text-align: center;
+      width: 100%;
+    }
+
+    input[type="number"],
+    input[type="text"],
+    select,
+    button {
       padding: 8px;
-      margin: 5px;
+      font-size: 0.9rem;
+      font-family: inherit;
     }
-    #editor {
-      position: relative;
-      display: inline-block;
-      margin-top: 10px;
+
+    input[type="number"] {
+      width: 160px;
     }
-    canvas {
-      border: 1px solid #000;
+
+    input[type="color"] {
+      height: 32px;
+      width: 32px;
+      padding: 0;
+      border: none;
+      cursor: pointer;
+    }
+
+    #memeCanvas {
+      border: 2px solid black;
+      background: white;
+      cursor: grab;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>🧠 Monktardio Meme Editor</h2>
-    <label for="token-id">Enter Token ID (1-2222):</label>
-    <input type="number" id="token-id" min="1" max="2222" placeholder="e.g. 128">
-    <button onclick="loadNFT()">Load NFT</button>
 
-    <div>
-      <input type="text" id="meme-text" placeholder="Enter overlay text">
-      <button onclick="drawOverlay()">Add Text</button>
-    </div>
+  <div class="row">
+    <label for="tokenId">Enter your Monktardio ID (#1–2222)</label>
+    <input type="number" id="tokenId" min="1" max="2222" placeholder="#1–2222" />
+    <button onclick="loadRandomNFT()">🎲</button>
+  </div>
 
-    <div>
-      <label for="overlay-select">Choose Overlay:</label>
-      <select id="overlay-select" onchange="drawOverlay()">
-        <option value="">None</option>
-        <option value="https://conqueror1903.github.io/monktardio-meme-editor/monktardio_overlay_GatorHead.png">GatorHead</option>
-        <option value="https://conqueror1903.github.io/monktardio-meme-editor/monktardio_overlay_Gmonktardio.png">Gmonktardio</option>
-        <option value="https://conqueror1903.github.io/monktardio-meme-editor/monktardio_overlay_GodZillaHead.png">GodZillaHead</option>
-        <option value="https://conqueror1903.github.io/monktardio-meme-editor/monktardio_overlay_HAHAHAHA.png">HAHAHAHA</option>
-        <option value="https://conqueror1903.github.io/monktardio-meme-editor/monktardio_overlay_Sweeper.png">Sweeper</option>
-        <option value="https://conqueror1903.github.io/monktardio-meme-editor/monktardio_overlay_ThugLife.png">ThugLife</option>
-      </select>
-    </div>
+  <div class="row">
+    <label for="topText">Top Text</label>
+    <input type="text" id="topText" placeholder="Monktardish Message" />
+    <input type="color" id="topColor" value="#000000" />
+    <button onclick="changeFontSize('topText', 2)">+</button>
+    <button onclick="changeFontSize('topText', -2)">−</button>
+    <button onclick="addOrUpdateText('topText')">Add</button>
+  </div>
 
-    <div id="editor">
-      <canvas id="meme-canvas" width="500" height="500"></canvas>
-    </div>
+  <div class="row">
+    <label for="bottomText">Bottom Text</label>
+    <input type="text" id="bottomText" placeholder="Monktardish Message" />
+    <input type="color" id="bottomColor" value="#000000" />
+    <button onclick="changeFontSize('bottomText', 2)">+</button>
+    <button onclick="changeFontSize('bottomText', -2)">−</button>
+    <button onclick="addOrUpdateText('bottomText')">Add</button>
+  </div>
 
-    <div>
-      <button onclick="downloadMeme()">⬇️ Download</button>
-      <button onclick="shareOnX()">🔗 Share on X</button>
-    </div>
+  <div class="row">
+    <label for="overlaySelect">Choose Overlay</label>
+    <select id="overlaySelect" onchange="addOverlay()">
+      <option value="">None</option>
+    </select>
+    <button onclick="resetCanvas()">Reset</button>
+  </div>
+
+  <canvas id="memeCanvas" width="500" height="500"></canvas>
+
+  <div class="row download-row">
+    <button onclick="downloadImage()">Download</button>
+    <button onclick="shareOnX()">Share on X</button>
   </div>
 
   <script>
-    const canvas = document.getElementById('meme-canvas');
-    const ctx = canvas.getContext('2d');
-    let currentImage = null;
-    let currentOverlayImage = null;
+    const overlayList = ["GatorHead", "Gmonktardio", "GodZillaHead", "HAHAHAHA", "Sweeper", "ThugLife", "GMCup", "Machete", "IceBreaker"];
+    const canvas = document.getElementById("memeCanvas");
+    const ctx = canvas.getContext("2d");
 
-    function loadNFT() {
-      const tokenId = document.getElementById('token-id').value;
-      if (!tokenId || tokenId < 1 || tokenId > 2222) {
-        alert('Please enter a valid Token ID between 1 and 2222.');
-        return;
-      }
-      const imageUrl = `https://ipfs.io/ipfs/bafybeiamvpd34u2bdn6ocaiybjqjkpytnhwcfcoooakkv4bd34tymrzv5e/${tokenId}.webp`;
+    let overlays = [];
+    let texts = {};
+    let baseImage = null;
+    let draggingTextId = null;
+    let offsetX, offsetY;
+
+    const overlaySelect = document.getElementById("overlaySelect");
+    overlayList.forEach(name => {
+      const option = document.createElement("option");
+      option.value = name;
+      option.textContent = name;
+      overlaySelect.appendChild(option);
+    });
+
+    function loadNFT(id) {
+      if (!id || id < 1 || id > 2222) return;
+      const url = `https://ipfs.io/ipfs/bafybeiamvpd34u2bdn6ocaiybjqjkpytnhwcfcoooakkv4bd34tymrzv5e/${id}.webp`;
       const img = new Image();
-      img.crossOrigin = 'anonymous';
+      img.crossOrigin = "anonymous";
       img.onload = () => {
-        currentImage = img;
-        drawOverlay();
+        baseImage = img;
+        drawAll();
       };
-      img.src = imageUrl;
+      img.onerror = () => alert("Failed to load image.");
+      img.src = url;
     }
 
-    function drawOverlay() {
-      if (!currentImage) return;
+    function loadRandomNFT() {
+      const id = Math.floor(Math.random() * 2222) + 1;
+      document.getElementById("tokenId").value = id;
+      loadNFT(id);
+    }
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(currentImage, 0, 0, canvas.width, canvas.height);
+    document.getElementById("tokenId").addEventListener("change", e => {
+      const id = parseInt(e.target.value);
+      if (id >= 1 && id <= 2222) loadNFT(id);
+    });
 
-      const overlayFile = document.getElementById('overlay-select').value;
-      if (overlayFile) {
-        const overlay = new Image();
-        overlay.onload = () => {
-          ctx.drawImage(overlay, 0, 0, canvas.width, canvas.height);
-          drawText();
+    function addOrUpdateText(id) {
+      const value = document.getElementById(id).value.trim();
+      const color = document.getElementById(id === "topText" ? "topColor" : "bottomColor").value;
+      if (!value) return;
+      if (!texts[id]) {
+        texts[id] = {
+          text: value,
+          x: canvas.width / 2,
+          y: id === "topText" ? 60 : canvas.height - 30,
+          size: 48,
+          color,
+          id
         };
-        overlay.src = overlayFile;
       } else {
-        drawText();
+        texts[id].text = value;
+        texts[id].color = color;
+      }
+      drawAll();
+    }
+
+    function changeFontSize(id, delta) {
+      if (texts[id]) {
+        texts[id].size = Math.max(8, texts[id].size + delta);
+        drawAll();
       }
     }
 
-    function drawText() {
-      const text = document.getElementById('meme-text').value;
-      if (!text) return;
-      ctx.font = 'bold 48px "Comic Sans MS", Impact, sans-serif';
-      ctx.fillStyle = '#fff';
-      ctx.strokeStyle = '#000';
-      ctx.lineWidth = 5;
-      ctx.textAlign = 'center';
-      ctx.strokeText(text, canvas.width / 2, 60);
-      ctx.fillText(text, canvas.width / 2, 60);
+    function addOverlay() {
+      const name = overlaySelect.value;
+      if (!name) return;
+      const img = new Image();
+      img.src = `./overlays/monktardio_overlay_${name}.png`;
+      img.onload = () => {
+        overlays.push({ img, x: 0, y: 0 });
+        drawAll();
+      };
     }
 
-    function downloadMeme() {
-      const link = document.createElement('a');
-      link.download = 'monktardio-meme.png';
+    function drawAll() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (baseImage) ctx.drawImage(baseImage, 0, 0, canvas.width, canvas.height);
+      overlays.forEach(o => ctx.drawImage(o.img, o.x, o.y, canvas.width, canvas.height));
+
+      Object.values(texts).forEach(t => {
+        ctx.font = `bold ${t.size}px "Comic Sans MS", Impact, sans-serif`;
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#000";
+        ctx.fillText(t.text, t.x + 2, t.y + 2); // Shadow
+        ctx.fillStyle = t.color;
+        ctx.fillText(t.text, t.x, t.y);         // Main text
+      });
+    }
+
+    canvas.addEventListener("mousedown", e => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      Object.entries(texts).forEach(([id, t]) => {
+        ctx.font = `bold ${t.size}px "Comic Sans MS", Impact, sans-serif`;
+        const width = ctx.measureText(t.text).width;
+        const height = t.size;
+        if (
+          x >= t.x - width / 2 &&
+          x <= t.x + width / 2 &&
+          y >= t.y - height &&
+          y <= t.y
+        ) {
+          draggingTextId = id;
+          offsetX = x - t.x;
+          offsetY = y - t.y;
+        }
+      });
+    });
+
+    canvas.addEventListener("mousemove", e => {
+      if (!draggingTextId) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      texts[draggingTextId].x = x - offsetX;
+      texts[draggingTextId].y = y - offsetY;
+      drawAll();
+    });
+
+    canvas.addEventListener("mouseup", () => {
+      draggingTextId = null;
+    });
+
+    canvas.addEventListener("mouseleave", () => {
+      draggingTextId = null;
+    });
+
+    function downloadImage() {
+      const link = document.createElement("a");
+      link.download = "monktardio_meme.png";
       link.href = canvas.toDataURL();
       link.click();
     }
 
     function shareOnX() {
-      const tweetText = encodeURIComponent('Check out my #Monktardio meme! 🤡👉🧠');
-      const tweetUrl = `https://twitter.com/intent/tweet?text=${tweetText}`;
-      window.open(tweetUrl, '_blank');
+      const text = encodeURIComponent("Just created my Monktardio meme! #Monktardio #NFT #Apechain");
+      const url = encodeURIComponent("https://monktard.io");
+      window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, "_blank");
+    }
+
+    function resetCanvas() {
+      texts = {};
+      overlays = [];
+      draggingTextId = null;
+      overlaySelect.value = "";
+      if (document.getElementById("tokenId").value) {
+        loadNFT(document.getElementById("tokenId").value);
+      } else {
+        baseImage = null;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
     }
   </script>
+
 </body>
 </html>
+
