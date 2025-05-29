@@ -88,6 +88,7 @@
       width: 100%;
       height: auto;
       display: block;
+      touch-action: none;
     }
 
     @media (max-width: 600px) {
@@ -115,13 +116,13 @@
   <div class="row">
     <label for="tokenId">Enter your Monktardio ID (#1–2222)</label>
     <input type="number" id="tokenId" min="1" max="2222" placeholder="#1–2222" />
-    <button onclick="loadRandomNFT()">🎲</button>
+    <button onclick="loadRandomNFT()">Random ID 🎲</button>
   </div>
 
   <div class="row">
     <label for="topText">Top Text</label>
     <input type="text" id="topText" placeholder="Monktardish Message" />
-    <input type="color" id="topColor" value="#000000" />
+    <input type="color" id="topColor" aria-label="Top text color" />
     <button onclick="changeFontSize('topText', 2)">+</button>
     <button onclick="changeFontSize('topText', -2)">−</button>
     <button onclick="addOrUpdateText('topText')">Add</button>
@@ -130,7 +131,7 @@
   <div class="row">
     <label for="bottomText">Bottom Text</label>
     <input type="text" id="bottomText" placeholder="Monktardish Message" />
-    <input type="color" id="bottomColor" value="#000000" />
+    <input type="color" id="bottomColor" aria-label="Bottom text color" />
     <button onclick="changeFontSize('bottomText', 2)">+</button>
     <button onclick="changeFontSize('bottomText', -2)">−</button>
     <button onclick="addOrUpdateText('bottomText')">Add</button>
@@ -244,17 +245,13 @@
         ctx.font = `bold ${t.size}px 'Anton', Impact, sans-serif`;
         ctx.textAlign = "center";
         ctx.fillStyle = "#000";
-        ctx.fillText(t.text, t.x + 2, t.y + 2); // Shadow
+        ctx.fillText(t.text, t.x + 2, t.y + 2);
         ctx.fillStyle = t.color;
-        ctx.fillText(t.text, t.x, t.y);         // Main text
+        ctx.fillText(t.text, t.x, t.y);
       });
     }
 
-    canvas.addEventListener("mousedown", e => {
-      const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-
+    function detectDrag(x, y) {
       Object.entries(texts).forEach(([id, t]) => {
         ctx.font = `bold ${t.size}px 'Anton', Impact, sans-serif`;
         const width = ctx.measureText(t.text).width;
@@ -270,25 +267,40 @@
           offsetY = y - t.y;
         }
       });
-    });
+    }
 
-    canvas.addEventListener("mousemove", e => {
-      if (!draggingTextId) return;
-      const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
+    function moveText(x, y) {
       texts[draggingTextId].x = x - offsetX;
       texts[draggingTextId].y = y - offsetY;
       drawAll();
-    });
+    }
 
-    canvas.addEventListener("mouseup", () => {
-      draggingTextId = null;
+    // Mouse
+    canvas.addEventListener("mousedown", e => {
+      const rect = canvas.getBoundingClientRect();
+      detectDrag(e.clientX - rect.left, e.clientY - rect.top);
     });
+    canvas.addEventListener("mousemove", e => {
+      if (!draggingTextId) return;
+      const rect = canvas.getBoundingClientRect();
+      moveText(e.clientX - rect.left, e.clientY - rect.top);
+    });
+    canvas.addEventListener("mouseup", () => draggingTextId = null);
+    canvas.addEventListener("mouseleave", () => draggingTextId = null);
 
-    canvas.addEventListener("mouseleave", () => {
-      draggingTextId = null;
+    // Touch
+    canvas.addEventListener("touchstart", e => {
+      const touch = e.touches[0];
+      const rect = canvas.getBoundingClientRect();
+      detectDrag(touch.clientX - rect.left, touch.clientY - rect.top);
     });
+    canvas.addEventListener("touchmove", e => {
+      if (!draggingTextId) return;
+      const touch = e.touches[0];
+      const rect = canvas.getBoundingClientRect();
+      moveText(touch.clientX - rect.left, touch.clientY - rect.top);
+    });
+    canvas.addEventListener("touchend", () => draggingTextId = null);
 
     function downloadImage() {
       const link = document.createElement("a");
