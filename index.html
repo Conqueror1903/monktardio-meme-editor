@@ -9,6 +9,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Press+Start+2P&display=swap" rel="stylesheet">
 
   <style>
+    :root {
+      --canvas-max-size: 500px;
+    }
+
     body {
       font-family: 'Press Start 2P', monospace;
       background: #f0f0f0;
@@ -26,6 +30,7 @@
       align-items: center;
       justify-content: center;
       margin-bottom: 10px;
+      max-width: 95vw;
     }
 
     .row.download-row {
@@ -46,6 +51,8 @@
       padding: 8px;
       font-size: 10px;
       font-family: 'Press Start 2P', monospace;
+      max-width: 100%;
+      box-sizing: border-box;
     }
 
     input[type="number"] {
@@ -60,7 +67,6 @@
       cursor: pointer;
     }
 
-    /* Windows 95-Stil für den Canvas-Rahmen */
     .win95-frame {
       background: #c0c0c0;
       padding: 4px;
@@ -70,6 +76,8 @@
         inset 2px 2px 0 #fff,
         2px 2px 0 #404040;
       margin-top: 10px;
+      width: 100%;
+      max-width: var(--canvas-max-size);
     }
 
     #memeCanvas {
@@ -77,6 +85,28 @@
       image-rendering: pixelated;
       background: white;
       cursor: grab;
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    @media (max-width: 600px) {
+      input[type="number"],
+      input[type="text"] {
+        width: 100%;
+      }
+
+      button {
+        flex: 1 1 auto;
+      }
+
+      label {
+        font-size: 10px;
+      }
+
+      body {
+        padding: 5px;
+      }
     }
   </style>
 </head>
