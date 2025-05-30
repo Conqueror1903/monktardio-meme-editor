@@ -6,11 +6,12 @@
   <title>Monktardio Meme Editor</title>
 
   <!-- Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Press+Start+2P&display=swap" rel="stylesheet" />
 
   <style>
     :root {
       --canvas-max-size: 500px;
+      --canvas-min-size: 280px;
     }
 
     body {
@@ -31,6 +32,7 @@
       justify-content: center;
       margin-bottom: 10px;
       max-width: 95vw;
+      width: 100%;
     }
 
     .row.download-row {
@@ -51,12 +53,22 @@
       padding: 8px;
       font-size: 10px;
       font-family: 'Press Start 2P', monospace;
-      max-width: 100%;
       box-sizing: border-box;
     }
 
-    input[type="number"] {
-      width: 160px;
+    input[type="number"],
+    input[type="text"],
+    select {
+      flex: 1 1 160px;
+      min-width: 120px;
+      max-width: 100%;
+    }
+
+    button {
+      flex: 1 1 80px;
+      min-width: 70px;
+      max-width: 100%;
+      cursor: pointer;
     }
 
     input[type="color"] {
@@ -65,6 +77,7 @@
       padding: 0;
       border: none;
       cursor: pointer;
+      flex-shrink: 0;
     }
 
     .win95-frame {
@@ -78,6 +91,7 @@
       margin-top: 10px;
       width: 100%;
       max-width: var(--canvas-max-size);
+      box-sizing: border-box;
     }
 
     #memeCanvas {
@@ -89,16 +103,15 @@
       height: auto;
       display: block;
       touch-action: none;
+      user-select: none;
     }
 
     @media (max-width: 600px) {
       input[type="number"],
-      input[type="text"] {
-        width: 100%;
-      }
-
+      input[type="text"],
+      select,
       button {
-        flex: 1 1 auto;
+        font-size: 9px;
       }
 
       label {
@@ -107,6 +120,10 @@
 
       body {
         padding: 5px;
+      }
+
+      .row {
+        gap: 6px;
       }
     }
   </style>
@@ -122,7 +139,7 @@
   <div class="row">
     <label for="topText">Top Text</label>
     <input type="text" id="topText" placeholder="Monktardish Message" />
-    <input type="color" id="topColor" aria-label="Top text color" />
+    <input type="color" id="topColor" aria-label="Top text color" value="#000000" />
     <button onclick="changeFontSize('topText', 2)">+</button>
     <button onclick="changeFontSize('topText', -2)">−</button>
     <button onclick="addOrUpdateText('topText')">Add</button>
@@ -131,7 +148,7 @@
   <div class="row">
     <label for="bottomText">Bottom Text</label>
     <input type="text" id="bottomText" placeholder="Monktardish Message" />
-    <input type="color" id="bottomColor" aria-label="Bottom text color" />
+    <input type="color" id="bottomColor" aria-label="Bottom text color" value="#000000" />
     <button onclick="changeFontSize('bottomText', 2)">+</button>
     <button onclick="changeFontSize('bottomText', -2)">−</button>
     <button onclick="addOrUpdateText('bottomText')">Add</button>
@@ -146,7 +163,7 @@
   </div>
 
   <div class="win95-frame">
-    <canvas id="memeCanvas" width="500" height="500"></canvas>
+    <canvas id="memeCanvas" ></canvas>
   </div>
 
   <div class="row download-row">
@@ -265,7 +282,7 @@
           draggingTextId = id;
           offsetX = x - t.x;
           offsetY = y - t.y;
-          break; // ✅ Wichtig: Nur den ersten Treffer verwenden!
+          break;
         }
       }
     }
@@ -283,53 +300,71 @@
       detectDrag(e.clientX - rect.left, e.clientY - rect.top);
     });
     canvas.addEventListener("mousemove", e => {
-      if (!draggingTextId) return;
-      const rect = canvas.getBoundingClientRect();
-      moveText(e.clientX - rect.left, e.clientY - rect.top);
+      if (draggingTextId) {
+        const rect = canvas.getBoundingClientRect();
+        moveText(e.clientX - rect.left, e.clientY - rect.top);
+      }
     });
-    canvas.addEventListener("mouseup", () => draggingTextId = null);
-    canvas.addEventListener("mouseleave", () => draggingTextId = null);
+    canvas.addEventListener("mouseup", () => {
+      draggingTextId = null;
+    });
+    canvas.addEventListener("mouseleave", () => {
+      draggingTextId = null;
+    });
 
     // Touch events
     canvas.addEventListener("touchstart", e => {
-      const touch = e.touches[0];
+      e.preventDefault();
       const rect = canvas.getBoundingClientRect();
+      const touch = e.touches[0];
       detectDrag(touch.clientX - rect.left, touch.clientY - rect.top);
     });
     canvas.addEventListener("touchmove", e => {
-      const touch = e.touches[0];
-      const rect = canvas.getBoundingClientRect();
-      moveText(touch.clientX - rect.left, touch.clientY - rect.top);
+      e.preventDefault();
+      if (draggingTextId) {
+        const rect = canvas.getBoundingClientRect();
+        const touch = e.touches[0];
+        moveText(touch.clientX - rect.left, touch.clientY - rect.top);
+      }
     });
-    canvas.addEventListener("touchend", () => draggingTextId = null);
+    canvas.addEventListener("touchend", () => {
+      draggingTextId = null;
+    });
+
+    function resetCanvas() {
+      overlays = [];
+      texts = {};
+      drawAll();
+    }
 
     function downloadImage() {
       const link = document.createElement("a");
-      link.download = "monktardio_meme.png";
+      link.download = `monktardio_meme_${Date.now()}.png`;
       link.href = canvas.toDataURL();
       link.click();
     }
 
     function shareOnX() {
-      const text = encodeURIComponent("Just created my Monktardio meme! #Monktardio #NFT #Apechain");
-      const url = encodeURIComponent("https://monktard.io");
-      window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, "_blank");
+      const imageUrl = canvas.toDataURL();
+      alert("Sharing on X ist mobil nicht direkt möglich. Bitte speichere das Bild und teile es manuell.");
     }
 
-    function resetCanvas() {
-      texts = {};
-      overlays = [];
-      draggingTextId = null;
-      overlaySelect.value = "";
-      if (document.getElementById("tokenId").value) {
-        loadNFT(document.getElementById("tokenId").value);
-      } else {
-        baseImage = null;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-      }
+    // Dynamische Canvas-Größe setzen
+    function resizeCanvas() {
+      const maxSize = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--canvas-max-size'));
+      const minSize = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--canvas-min-size'));
+      const width = Math.min(maxSize, Math.max(minSize, window.innerWidth - 20));
+      canvas.width = width;
+      canvas.height = width; // quadratisch
+      drawAll();
     }
+
+    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('load', () => {
+      resizeCanvas();
+      loadRandomNFT();
+    });
+
   </script>
-
 </body>
 </html>
-
