@@ -245,14 +245,14 @@
         ctx.font = `bold ${t.size}px 'Anton', Impact, sans-serif`;
         ctx.textAlign = "center";
         ctx.fillStyle = "#000";
-        ctx.fillText(t.text, t.x + 2, t.y + 2);
+        ctx.fillText(t.text, t.x + 2, t.y + 2); // Shadow
         ctx.fillStyle = t.color;
         ctx.fillText(t.text, t.x, t.y);
       });
     }
 
     function detectDrag(x, y) {
-      Object.entries(texts).forEach(([id, t]) => {
+      for (const [id, t] of Object.entries(texts)) {
         ctx.font = `bold ${t.size}px 'Anton', Impact, sans-serif`;
         const width = ctx.measureText(t.text).width;
         const height = t.size;
@@ -265,17 +265,19 @@
           draggingTextId = id;
           offsetX = x - t.x;
           offsetY = y - t.y;
+          break; // ✅ Wichtig: Nur den ersten Treffer verwenden!
         }
-      });
+      }
     }
 
     function moveText(x, y) {
+      if (!draggingTextId) return;
       texts[draggingTextId].x = x - offsetX;
       texts[draggingTextId].y = y - offsetY;
       drawAll();
     }
 
-    // Mouse
+    // Mouse events
     canvas.addEventListener("mousedown", e => {
       const rect = canvas.getBoundingClientRect();
       detectDrag(e.clientX - rect.left, e.clientY - rect.top);
@@ -288,14 +290,13 @@
     canvas.addEventListener("mouseup", () => draggingTextId = null);
     canvas.addEventListener("mouseleave", () => draggingTextId = null);
 
-    // Touch
+    // Touch events
     canvas.addEventListener("touchstart", e => {
       const touch = e.touches[0];
       const rect = canvas.getBoundingClientRect();
       detectDrag(touch.clientX - rect.left, touch.clientY - rect.top);
     });
     canvas.addEventListener("touchmove", e => {
-      if (!draggingTextId) return;
       const touch = e.touches[0];
       const rect = canvas.getBoundingClientRect();
       moveText(touch.clientX - rect.left, touch.clientY - rect.top);
@@ -331,3 +332,4 @@
 
 </body>
 </html>
+
