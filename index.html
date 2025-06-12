@@ -190,9 +190,9 @@
       overlaySelect.appendChild(option);
     });
 
-    function loadNFT(id) {
+  function loadNFT(id) {
       if (!id || id < 1 || id > 2222) return;
-      const url = `https://bafybeiamvpd34u2bdn6ocaiybjqjkpytnhwcfcoooakkv4bd34tymrzv5e.ipfs.w3s.link/${tokenId}.webp`;
+      const url = `https://ipfs.io/ipfs/bafybeiamvpd34u2bdn6ocaiybjqjkpytnhwcfcoooakkv4bd34tymrzv5e/${id}.webp`;
       const img = new Image();
       img.crossOrigin = "anonymous";
       img.onload = () => {
@@ -241,17 +241,31 @@
       }
     }
 
-    function addOverlay() {
-      const name = overlaySelect.value;
-      if (!name) return;
-      const img = new Image();
-      img.src = `./overlays/monktardio_overlay_${name}.png`;
-      img.onload = () => {
-        overlays.push({ img, x: 0, y: 0 });
-        drawAll();
-      };
-      img.onerror = () => alert(`Overlay '${name}' konnte nicht geladen werden.`);
-    }
+function addOverlay() {
+  const name = overlaySelect.value;
+  if (!name) {
+    // "None" ausgewählt – Alle Overlays löschen:
+    overlays = [];
+    drawAll();
+    return;
+  }
+
+  // Prüfen, ob das Overlay bereits geladen wurde:
+  const alreadyExists = overlays.some(o => o.name === name);
+  if (alreadyExists) {
+    alert(`Overlay '${name}' ist bereits hinzugefügt.`);
+    return;
+  }
+
+  // Overlay laden und hinzufügen:
+  const img = new Image();
+  img.src = `./overlays/monktardio_overlay_${name}.png`;
+  img.onload = () => {
+    overlays.push({ name, img, x: 0, y: 0 }); // Mehrere Overlays stapeln möglich
+    drawAll();
+  };
+  img.onerror = () => alert(`Overlay '${name}' konnte nicht geladen werden.`);
+}
 
     function drawAll() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -345,9 +359,10 @@
     }
 
     function shareOnX() {
-      const imageUrl = canvas.toDataURL();
-      alert("Sharing on X ist mobil nicht direkt möglich. Bitte speichere das Bild und teile es manuell.");
-    }
+  	const text = encodeURIComponent("Just made this masterpiece with the Monktardio Meme Editor! 🔥🐵 #Monktardio #NFT #Apechain");
+  	const url = encodeURIComponent("https://monktard.io");
+  	window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, "_blank");
+	}
 
     // Dynamische Canvas-Größe setzen
     function resizeCanvas() {
